@@ -27,6 +27,10 @@ This should create a workspace and clone the existing repository into it.
 
 In order to productively run code, you'll need to have several processes running through terminal. If you open multiple terminals for these processes, each terminal **must** have sourced devel/setup.bash (from this directory). Here is a list of the commands that should be running, in the order that they need to be run:
 
-* `roslaunch freenect_launch freenect.launch` This also runs roscore, provided it isn't running already
+* `roslaunch freenect_launch freenect.launch` (This also runs roscore, provided it isn't running already)
+  * `roslaunch bwi_launch v2.launch` (I'm told something like this exists for the robot but idk)
 * `rosrun rviz rviz`
+* `rosrun fri2_pkg <file name>
 * TODO: figure out what all else must be run
+
+All source code implementations should be in the src directory, and all source code interfaces (the .h files) should be put in the include/fri2 directory.

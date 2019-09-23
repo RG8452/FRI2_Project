@@ -1,0 +1,2 @@
+there's nothing to really put here yet
+when you make your first .cpp/.h pair, please put the .h files in this folder

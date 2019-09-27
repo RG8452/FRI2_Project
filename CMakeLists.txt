@@ -50,6 +50,7 @@ include_directories(
 ## Declare a C++ Executable
 add_executable(pointing_main
   src/pointing_main.cpp
+  src/test.cpp
 #  others
 )
 

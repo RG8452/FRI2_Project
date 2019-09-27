@@ -16,6 +16,7 @@ We would like for the robot to have fairly high prediction accuracy, and in orde
 
 ## Setup
 To initialize this repository, you should run the following process:
+* `source /opt/ros/kinetic/setup.bash`
 * `mkdir my_catkin_ws`
 * `cd my_catkin_ws`
 * `catkin_init_workspace`
@@ -39,6 +40,14 @@ In order to productively run code, you'll need to have several processes running
 * TODO: figure out what all else must be run
 
 All source code implementations should be in the src directory, and all source code interfaces (the .h files) should be put in the include/fri2 directory.
+
+### Adding files
+All of the logic in this package should be abstracted into classes or other files as much as possible.If you want to add a file to handle some piece of logic, you should follow these steps:
+1. Create a header file that specifies an interface under the folder `include/fri2/<file>.h`
+2. Create a source file that provides an implementation under the folder `src/<file>.h`
+3. Put the source file into the CMakeList.txt under the executable that needs it
+
+There's currently a test file that does nothing but will provide a reference for how to structure additions.
 
 ## YOLO
 The YOLO package that we intend to use alongside our project is a custom ROS package located in the GitHub repo [leggedrobotics/darknet_ros](https://github.com/leggedrobotics/darknet_ros). For reference in using/subscribing to the topic that this repo publishes, you can reference Parth's repo [here](https://github.com/ParthChonkar/FRI_FinalProject). Specifically, the file [subscriber.py](https://github.com/ParthChonkar/FRI_FinalProject/blob/master/identification_protocol/src/subscriber.py) might serve as a useful reference.

@@ -2,13 +2,20 @@ cmake_minimum_required(VERSION 2.8.3)
 project(fri2_pkg)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  rospy
   geometry_msgs
   std_msgs
   tf
+  cv_bridge
+  image_transport
+  sensor_msgs
+)
+find_package(
+  OpenCV
 )
 
 ## Generate messages in the 'msg' folder
@@ -50,16 +57,18 @@ include_directories(
 ## Declare a C++ Executable
 add_executable(pointing_main
   src/pointing_main.cpp
+  src/ImageProcessor.cpp
   src/test.cpp
 #  others
 )
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(pointing_main
+  ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
 )
 
-install(FILES
-  launch/kinect
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
+#install(FILES
+#  launch/kinect
+#  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+#)

@@ -2,10 +2,12 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
 #include <cv_bridge/cv_bridge.h>
+#include <openpose_ros_msgs/OpenPoseHumanList.h>
 
 //#include "libfreenect.h"
 //#include "fri2/test.h"
 #include "fri2/ImageProcessor.h"
+#include "fri2/Storage.h"
 
 /*
  * There's some weird jank going on here, I'm honestly just testing the kinect
@@ -21,6 +23,7 @@ int main(int argc, char **argv) {
     ros::init(argc, argv, "hw5_node");
     ros::NodeHandle n;
 
+    /*
     ImageProcessor ip("/camera/rgb/image_color");
     ros::Subscriber sub = n.subscribe<sensor_msgs::Image>("/camera/rgb/image_color",
                                                           100, &ImageProcessor::imageCb, &ip);
@@ -36,6 +39,11 @@ int main(int argc, char **argv) {
     ImageProcessor ip4("/camera/depth/image_rect", sensor_msgs::image_encodings::TYPE_32FC1);
     ros::Subscriber sub4 = n.subscribe<sensor_msgs::Image>("/camera/depth/image_rect",
                                                           100, &ImageProcessor::imageCb, &ip4);
+    */
+
+    Storage<openpose_ros_msgs::OpenPoseHumanList> s;
+    ros::Subscriber openpose_sub = n.subscribe<openpose_ros_msgs::OpenPoseHumanList>(
+		                               "/openpose_ros/human_list", 10, &Storage::add, &s);
 
     ros::spin();
 

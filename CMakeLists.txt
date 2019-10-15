@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   image_transport
   sensor_msgs
+  openpose_ros_msgs
 )
 find_package(
   OpenCV

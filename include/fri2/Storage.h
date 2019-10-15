@@ -1,12 +1,13 @@
 #include <ros/ros.h>
+#include <openpose_ros_msgs/OpenPoseHumanList.h>
+#include <openpose_ros_msgs/OpenPoseHuman.h>
 
-template <typename T>
 class Storage {
 public:
     Storage() : __index(0) {}
-    void add(T);
-    T get();
+    void add(openpose_ros_msgs::OpenPoseHumanList);
+    openpose_ros_msgs::OpenPoseHuman get();
 private:
-    T __data[10];
+    openpose_ros_msgs::OpenPoseHuman __data[10];
     uint8_t __index;
 };

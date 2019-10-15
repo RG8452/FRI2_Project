@@ -1,17 +1,16 @@
 #include <ros/ros.h>
 #include <fri2/Storage.h>
 
-template <typename T>
-void Storage<T>::add(T t) {
-    __data[__index] = t;
-    __index = (__index + 1) % 10;
+void Storage::add(openpose_ros_msgs::OpenPoseHumanList list) {
+    ROS_INFO("TEST");
+    if(list.num_humans != 0) {
+        __index = (__index + 1) % 10;
+        __data[__index] = list.human_list[0];
+        ROS_INFO("Set index %d", __index);
+    }
 }
 
-template <typename T>
-T Storage<T>::get() {
-    int8_t spot = __index;
-    if(spot - 1 < 0) spot = 10;
-    spot--;
-
-    return __data[spot];
+openpose_ros_msgs::OpenPoseHuman Storage::get() {
+    ROS_INFO("Get index %d", __index);
+    return __data[__index];
 }

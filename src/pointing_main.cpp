@@ -3,6 +3,8 @@
 #include <sensor_msgs/image_encodings.h>
 #include <cv_bridge/cv_bridge.h>
 #include <openpose_ros_msgs/OpenPoseHumanList.h>
+#include <openpose_ros_msgs/OpenPoseHuman.h>
+#include <openpose_ros_msgs/PointWithProb.h>
 
 //#include "libfreenect.h"
 //#include "fri2/test.h"
@@ -41,11 +43,18 @@ int main(int argc, char **argv) {
                                                           100, &ImageProcessor::imageCb, &ip4);
     */
 
-    Storage<openpose_ros_msgs::OpenPoseHumanList> s;
+    Storage s;
     ros::Subscriber openpose_sub = n.subscribe<openpose_ros_msgs::OpenPoseHumanList>(
 		                               "/openpose_ros/human_list", 10, &Storage::add, &s);
 
-    ros::spin();
+    ros::Duration(0.5).sleep();
 
+    ros::spinOnce();
+
+    openpose_ros_msgs::OpenPoseHuman h = s.get();
+    ROS_INFO("Right arm: x: %f, y: %f", h.body_key_points_with_prob[3].x, h.body_key_points_with_prob[3].y);
+    ROS_INFO("Right wrist: x: %f, y: %f", h.body_key_points_with_prob[4].x, h.body_key_points_with_prob[4].y);
+    ROS_INFO("Left arm: x: %f, y: %f", h.body_key_points_with_prob[6].x, h.body_key_points_with_prob[6].y);
+    ROS_INFO("Left wrist: x: %f, y: %f", h.body_key_points_with_prob[7].x, h.body_key_points_with_prob[7].y);
     return 0;
 }

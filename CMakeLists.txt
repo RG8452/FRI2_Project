@@ -59,7 +59,6 @@ include_directories(
 add_executable(pointing_main
   src/pointing_main.cpp
   src/ImageProcessor.cpp
-  src/test.cpp
   src/Storage.cpp
 #  others
 )

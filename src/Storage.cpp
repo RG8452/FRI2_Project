@@ -14,24 +14,6 @@ void Storage::calibrate(const sensor_msgs::CameraInfo& msg) {
 	cy = msg.K[5];
 }
 
-void Storage::storePoints(sensor_msgs::PointCloud2Ptr thePoints) {   
-    if (__points) delete[] __points;
-    theData = thePoints->data.data();
-    sensor_msgs::PointCloud output;
-    sensor_msgs::convertPointCloud2ToPointCloud(*thePoints.get(), output);
-    uint32_t len = output.points.size();
-    this->__numPoints = len;
-    __points = new geometry_msgs::Point32[len];
-    std::memcpy(__points, output.points.data(), len);
-}
-
 openpose_ros_msgs::OpenPoseHuman Storage::get() {
     return __data[__index];
-}
-
-void Storage::copyPoints(geometry_msgs::Point32 *&buffer) {
-    if (!__points) return;
-    ROS_INFO("Copying points");
-    if (!buffer) buffer = new geometry_msgs::Point32[this->__numPoints];
-    std::memcpy(buffer, this->__points, this->__numPoints);
 }

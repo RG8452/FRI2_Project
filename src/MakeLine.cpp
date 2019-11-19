@@ -40,8 +40,8 @@ void MakeLine::pubPoints(geometry_msgs::Point p, geometry_msgs::Point q) {
 	// Put points into line strip
 	line_strip.points.push_back(p);
 	line_strip.points.push_back(q);
-	while(ros::ok()) {
-	marker_pub.publish(line_strip);
-	//marker_pub.publish(points);
-	}
+//	while(ros::ok()) {
+//	marker_pub.publish(line_strip);
+//	//marker_pub.publish(points);
+//	}
 }

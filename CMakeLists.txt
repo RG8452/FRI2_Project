@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   sensor_msgs
   openpose_ros_msgs
+  visualization_msgs
 )
 find_package(
   OpenCV
@@ -60,6 +61,7 @@ add_executable(pointing_main
   src/pointing_main.cpp
   src/ImageProcessor.cpp
   src/Storage.cpp
+  src/MakeLine.cpp
 #  others
 )
 

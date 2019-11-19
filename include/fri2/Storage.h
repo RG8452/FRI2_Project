@@ -1,3 +1,6 @@
+#ifndef _POINT_STORAGE_H_
+#define _POINT_STORAGE_H_
+
 #include <ros/ros.h>
 #include <openpose_ros_msgs/OpenPoseHumanList.h>
 #include <openpose_ros_msgs/OpenPoseHuman.h>
@@ -23,3 +26,5 @@ private:
     uint16_t __numPoints;
     uint8_t __index;
 };
+
+#endif

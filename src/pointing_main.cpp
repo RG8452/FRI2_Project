@@ -11,6 +11,30 @@
 #include "fri2/ImageProcessor.h"
 #include "fri2/Storage.h"
 #include "fri2/MakeLine.h"
+
+typedef struct {
+    int x;
+    int y;
+} pt2;
+
+inline int nearest(float f) {
+    if ((f - 0.5) > (int) f) return ((int) f + 1);
+    return (int) f;
+}
+
+// Pushes every single pixel that needs to be checked into the vector
+// Takes parameters of pixel to start and pixel to end
+// Note: This algorithm is similar, but not identical to the one on wikipedia
+void bressLine(std::vector<pt2> &vec, pt2 *start, pt2 *end) {
+    float dX = end->x - start->x;
+    float dY = end->y - start->y;
+    float m = dY/dX;
+    for (int tx = 0; x < end->x - start->x; x++) {
+	pt2 p { tx + start->x, nearest(m * x + start->y)};
+	if (p.x < 0 || p.x > 640 || p.y < 0 || p.y > 480) return;
+	vec.push_back(p);
+    }
+}
  
 static cv::Mat g_matrix;
 static bool mat_read = false;
@@ -78,5 +102,10 @@ int main(int argc, char **argv) {
 	//wristPub.publish(wristMsg);
 	//elbowPub.publish(elbowMsg); 
 	ml.pubPoints(elbowMsg, wristMsg);
+
+	pt2 p1;
+	pt2 p2;
+	std::vector<pt2> v;
+	bressLine(c, &p1, &p2);
  return 0;
 }

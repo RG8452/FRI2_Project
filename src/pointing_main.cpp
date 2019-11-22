@@ -17,6 +17,7 @@ typedef struct {
     int y;
 } pt2;
 
+// Round to the nearest float
 inline int nearest(float f) {
     if ((f - 0.5) > (int) f) return ((int) f + 1);
     return (int) f;
@@ -29,11 +30,25 @@ void bressLine(std::vector<pt2> &vec, pt2 *start, pt2 *end) {
     float dX = end->x - start->x;
     float dY = end->y - start->y;
     float m = dY/dX;
-    for (int tx = 0; x < end->x - start->x; x++) {
-	pt2 p { tx + start->x, nearest(m * x + start->y)};
+    for (int tx = 0; tx < end->x - start->x; tx++) {
+	pt2 p { tx + start->x, nearest(m * tx + start->y)};
 	if (p.x < 0 || p.x > 640 || p.y < 0 || p.y > 480) return;
 	vec.push_back(p);
     }
+}
+
+// Check if the pixel is inside bounding box
+bool inSideBoundingBox(BoundingBox[] bounding_boxes, pt2 pixel) {
+	for (int i = 0; i < bounding_boxes.size(); i++) {
+		if (pixel.x >= bounding_boxes[i].xmin &&
+		    pixel.x <= bounding_boxes[i].xmin &&
+		    pixel.y >= bounding_boxes[i].ymin &&
+		    pixel.y <= bounding_boxes[i].ymax) 
+		{
+			return true;
+		}
+	}
+	return false;
 }
  
 static cv::Mat g_matrix;
@@ -96,16 +111,45 @@ int main(int argc, char **argv) {
 	wristMsg.x = armPoints[3];
 	wristMsg.y = armPoints[4];
 	wristMsg.z = armPoints[5];
+	ROS_INFO("Wrist: x %f y %f z %f\n", wristMsg.x, wristMsg.y, wristMsg.z);
 	elbowMsg.x = armPoints[0];
 	elbowMsg.y = armPoints[1];
 	elbowMsg.z = armPoints[2];
-	//wristPub.publish(wristMsg);
-	//elbowPub.publish(elbowMsg); 
 	ml.pubPoints(elbowMsg, wristMsg);
 
+	float slope = (h.body_key_points_with_prob[4].y - h.body_key_points_with_prob[3].y) /
+	              (h.body_key_points_with_prob[4].x - h.body_key_points_with_prob[3].x);
+	float posY = h.body_key_points_with_prob[4].y;
+	int posX = (int) h.body_key_points_with_prob[4].x;
+
+        if (h.body_key_points_with_prob[4].x - h.body_key_points_with_prob[3].x < 0) {
+	    ROS_INFO("x: %d, y: %d\n", posX, (int)posY);
+	    //Pointing left
+	    for (; posX > 0; posX--) {
+		posY -= slope;
+		if (posY < 0 || posY > 480) break;
+	    }
+	    if (posY < 0) posY = 0;
+	    else if (posY > 480) posY = 480;
+	    else posX = 0;
+	    ROS_INFO("After adjustment: x: %d, y: %d\n", posX, (int) posY);
+	    geometry_msgs::Point end;
+	    float posZ = g_matrix.at<float>((int)posY, posX);
+	    end.z = posZ;
+	    
+	    end.x = (posX + .5 - s.cx) * s.fx * posZ;
+	    end.y = (posY + .5 - s.cy) * s.fy * posZ;
+	    ROS_INFO("X: %f, Y: %f, Z: %f", end.x, end.y, end.z);
+	    //ml.pubPoints(end, wristMsg);
+	}
+	
+
+	/*
 	pt2 p1;
 	pt2 p2;
 	std::vector<pt2> v;
 	bressLine(c, &p1, &p2);
+	*/
+
  return 0;
 }

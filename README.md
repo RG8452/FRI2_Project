@@ -59,3 +59,10 @@ There's currently a test file that does nothing but will provide a reference for
 The YOLO package that we intend to use alongside our project is a custom ROS package located in the GitHub repo [leggedrobotics/darknet_ros](https://github.com/leggedrobotics/darknet_ros). For reference in using/subscribing to the topic that this repo publishes, you can reference Parth's repo [here](https://github.com/ParthChonkar/FRI_FinalProject). Specifically, the file [subscriber.py](https://github.com/ParthChonkar/FRI_FinalProject/blob/master/identification_protocol/src/subscriber.py) might serve as a useful reference.
 
 The LeggedRobotics darknet_ros package must be in the **same workspace src folder** as fri2_pkg in order to run. This must be configured in the CMakeLists file in order to function properly. Furthermore, the path variable in the ImageHandler class (called imgFolderPath) so that its absolute path points to (and includes) the rospackage on your local machine.
+
+
+
+roslaunch darknet_ros yolo_v3.launch
+
+
+

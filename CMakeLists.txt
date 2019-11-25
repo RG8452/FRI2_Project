@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   sensor_msgs
   openpose_ros_msgs
+  darknet_ros_msgs
   visualization_msgs
 )
 find_package(

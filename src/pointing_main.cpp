@@ -159,14 +159,7 @@ int main(int argc, char **argv) {
 		float curY = (h.body_key_points_with_prob[j].y + .5 - s.cy) * s.fy * curZ;
 		armPoints[3 * i + 1] = curY;
     }
-    /*
-    for(int i = 0; i < 12; i++) {
-    	if(armPoints[i] == 0 || isnan(armPoints[i]) {
-		ros::spinOnce(); 		
-	}
-    } */ 	
-
-    //MakeLine ml(&n);	
+	// GET WRIST COORDINATES
     ros::Rate loop_rate(10);
     int count = 0;
     
@@ -188,6 +181,7 @@ int main(int argc, char **argv) {
 	int posX = (int) h.body_key_points_with_prob[4].x;
 	int startX = posX;
 	int startY = (int) posY;
+
 
     if (h.body_key_points_with_prob[4].x - h.body_key_points_with_prob[3].x < 0) {
 	    ROS_INFO("Pointing left, x: %d, y: %d", posX, (int)posY);

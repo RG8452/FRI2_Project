@@ -60,9 +60,7 @@ The YOLO package that we intend to use alongside our project is a custom ROS pac
 
 The LeggedRobotics darknet_ros package must be in the **same workspace src folder** as fri2_pkg in order to run. This must be configured in the CMakeLists file in order to function properly. Furthermore, the path variable in the ImageHandler class (called imgFolderPath) so that its absolute path points to (and includes) the rospackage on your local machine.
 
-
-
 roslaunch darknet_ros yolo_v3.launch
 
-
-
+For more information regarding distance from a point to a line in 3D:
+http://mathworld.wolfram.com/Point-LineDistance3-Dimensional.html

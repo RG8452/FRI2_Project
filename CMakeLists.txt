@@ -4,6 +4,8 @@ project(fri2_pkg)
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
@@ -20,6 +22,10 @@ find_package(catkin REQUIRED COMPONENTS
 find_package(
   OpenCV
 )
+#find_package(
+#Eigen REQUIRED
+#)
+
 
 ## Generate messages in the 'msg' folder
 # add_message_files()
@@ -46,7 +52,7 @@ find_package(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+	#  INCLUDE_DIRS include
 #  CATKIN_DEPENDS roscpp std_msgs tf
 #  DEPENDS system_lib
 )
@@ -54,7 +60,8 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  #/usr/include/eigen3/
+  #${EIGEN_INCLUDE_DIRS}
+  /usr/include/eigen3/
 )
 
 ## Declare a C++ Executable
@@ -63,6 +70,7 @@ add_executable(pointing_main
   src/ImageProcessor.cpp
   src/Storage.cpp
   src/MakeLine.cpp
+  src/Mapping.cpp
 #  others
 )
 
@@ -71,6 +79,10 @@ target_link_libraries(pointing_main
   ${OpenCV_LIBS}
   ${catkin_LIBRARIES}
 )
+
+#target_link_libraries(Mapping
+#	${catkin_LIBRARIES}
+#)
 
 #install(FILES
 #  launch/kinect

@@ -15,9 +15,18 @@
 #include "fri2/Storage.h"
 #include "fri2/MakeLine.h"
 #include <set>
+#include <Eigen/Dense>
+
+typedef struct {
+    int x;
+    int y;
+} pixel2d;
 
 static darknet_ros_msgs::BoundingBox *g_boxes = nullptr;
 static int g_numBoxes = -1;
+
+void mapDepthToMatrix(Eigen::MatrixXf &, Storage &);
+void bressLine(pixel2d, pixel2d);
 
 void store_boxes(const darknet_ros_msgs::BoundingBoxes &boxes) {
 	if (g_numBoxes == -1) return; //Can't store data without this value
@@ -30,10 +39,6 @@ void store_box_count(const darknet_ros_msgs::ObjectCount &msg) {
 	g_numBoxes = msg.count;
 }
 
-typedef struct {
-    int x;
-    int y;
-} pixel2d;
 //bool insideBoundingBox(darknet_ros_msgs::BoundingBox*, int, pixel2d, int);
 bool insideBoundingBox(pixel2d, int);
 
@@ -43,22 +48,6 @@ inline int nearest(float f) {
     return (int) f;
 }
 
-// Super dump implementation of a bresenham line; checks along the line given
-// Will look up and down a certain number of pixels away from the given points
-// Note: This algorithm is similar, but not identical to the one on wikipedia
-void bressLine(pixel2d start, pixel2d end) {
-    float dX = end.x - start.x;
-    float dY = end.y - start.y;
-    float m = dY/dX;
-	int const verticalRange = 2; //Check 2 up, 2 down from calculated pixel
-    for (int tx = 0; tx < abs(end.x - start.x); tx++) {
-		// Iterating x from the start x to the end x
-		pixel2d p { tx + start.x, nearest(m * tx + start.y)};
-		if (end.x < start.x) p.x = (start.x - tx); // Account for pointing left
-		if (p.x < 0 || p.x > 640 || p.y < 0 || p.y > 480) continue;
-		insideBoundingBox(p, verticalRange);
-    }
-}
 
 /*
 void bresenham3D() {
@@ -114,6 +103,7 @@ void depth_test_cb(const sensor_msgs::Image img) {
     mat_read = true; 
 }
 
+
 int main(int argc, char **argv) { 
     ros::init(argc, argv, "hw5_node");
     ros::NodeHandle n;
@@ -150,6 +140,7 @@ int main(int argc, char **argv) {
     ROS_INFO("Right arm: 3, right wrist: 4, left arm: 6, left wrist: 7");
     uint32_t points[4] {3, 4, 6, 7};
     float armPoints[12]; //array with all the points
+    Eigen::MatrixXf pointMatrix;
     for(int i = 0; i < 4; i++) {
 		uint32_t j = points[i];
 		float curZ = g_matrix.at<float>((int) h.body_key_points_with_prob[j].y, (int) h.body_key_points_with_prob[j].x);
@@ -158,6 +149,9 @@ int main(int argc, char **argv) {
 		armPoints[3 * i] = curX;
 		float curY = (h.body_key_points_with_prob[j].y + .5 - s.cy) * s.fy * curZ;
 		armPoints[3 * i + 1] = curY;
+		//pointMatrix(i, 0) = curX;
+		//pointMatrix(i, 1) = curY;
+		//pointMatrix(i, 2) = curZ;
     }
 	// GET WRIST COORDINATES
     ros::Rate loop_rate(10);
@@ -208,15 +202,52 @@ int main(int argc, char **argv) {
 	    end.y = (posY + .5 - s.cy) * s.fy * posZ;
 	    ROS_INFO("X: %f, Y: %f, Z: %f", end.x, end.y, end.z);
 	    //ml.pubPoints(end, wristMsg);
+
+	    mapDepthToMatrix(pointMatrix, s);
 	}
 	
-
+	
 	/*
 	pt2 p1;
 	pt2 p2;
 	std::vector<pt2> v;
 	bressLine(c, &p1, &p2);
-	*/
+	*/	
 
- return 0;
+ 	return 0;
+}
+
+void calculateCoords(Storage &s, int index, float &x, float &y, float &z) {
+    int row = index / 640;
+    int col = index % 640;
+    z = g_matrix.at<float>(row, col);
+    x = (col + 0.5 - s.cx) * s.fx * z;
+    y = (row + 0.5 - s.cy) * s.fy * z;
+}
+
+void mapDepthToMatrix(Eigen::MatrixXf &pMatrix, Storage &s) {
+    for (int index = 0; index < 480 * 640; index++) {
+	float x, y, z;
+	calculateCoords(s, index, x, y, z);
+	pMatrix(index, 1) = x;
+	pMatrix(index, 2) = y;
+	pMatrix(index, 3) = z;
+    }
+}
+
+// Super dump implementation of a bresenham line; checks along the line given
+// Will look up and down a certain number of pixels away from the given points
+// Note: This algorithm is similar, but not identical to the one on wikipedia
+void bressLine(pixel2d start, pixel2d end) {
+    float dX = end.x - start.x;
+    float dY = end.y - start.y;
+    float m = dY/dX;
+    int const verticalRange = 2; //Check 2 up, 2 down from calculated pixel
+    for (int tx = 0; tx < abs(end.x - start.x); tx++) {
+		// Iterating x from the start x to the end x
+		pixel2d p { tx + start.x, nearest(m * tx + start.y)};
+		if (end.x < start.x) p.x = (start.x - tx); // Account for pointing left
+		if (p.x < 0 || p.x > 640 || p.y < 0 || p.y > 480) continue;
+		insideBoundingBox(p, verticalRange);
+    }
 }

@@ -17,17 +17,24 @@
 #include <set>
 #include <Eigen/Dense>
 
+//TYPE DEFINITIONS
 typedef struct {
-    int x;
+	int x;
     int y;
 } pixel2d;
 
+//HACKY STUPID GLOBAL VARIABLES THAT SHOULDN"T EXIST
 static darknet_ros_msgs::BoundingBox *g_boxes = nullptr;
 static int g_numBoxes = -1;
+static cv::Mat g_matrix;
+static bool mat_read = false;
 
+// forward declarations because we don't have a header
 void mapDepthToMatrix(Eigen::MatrixXf &, Storage &);
 void bressLine(pixel2d, pixel2d);
+bool insideBoundingBox(pixel2d, int);
 
+//methods that ryan didn't feel like moving
 void store_boxes(const darknet_ros_msgs::BoundingBoxes &boxes) {
 	if (g_numBoxes == -1) return; //Can't store data without this value
 	if (g_boxes) delete[] g_boxes;
@@ -35,12 +42,10 @@ void store_boxes(const darknet_ros_msgs::BoundingBoxes &boxes) {
 	for (auto i = 0; i < g_numBoxes; i++)
 		g_boxes[i] = boxes.bounding_boxes.at(i);
 }
+
 void store_box_count(const darknet_ros_msgs::ObjectCount &msg) {
 	g_numBoxes = msg.count;
 }
-
-//bool insideBoundingBox(darknet_ros_msgs::BoundingBox*, int, pixel2d, int);
-bool insideBoundingBox(pixel2d, int);
 
 // Round to the nearest float
 inline int nearest(float f) {
@@ -48,68 +53,17 @@ inline int nearest(float f) {
     return (int) f;
 }
 
-
-/*
-void bresenham3D() {
-
-}
-*/
-
-// Check if the pixel is inside bounding box
-//bool insideBoundingBox(darknet_ros_msgs::BoundingBox* bounding_boxes, int numBoxes, pixel2d pixel, int delta) {
-bool insideBoundingBox(pixel2d pixel, int delta) {
-	std::set<int> yPts;
-	// Gather all x and y coordinates around the point
-	yPts.insert(pixel.y);
-	for (int i=0; i<delta; i++) {
-		yPts.insert(pixel.y + i);
-		yPts.insert(pixel.y - i);
-	}
-	// Iterate through the bounding boxes
-	bool xValid = false;
-	for (int i = 0; i < g_numBoxes; i++) {
-		// Check if there are any valid x values
-		/*
-		std::vector<int>::iterator ptr = xPts.begin();
-		while(ptr != xPts.end()) {
-			if (*ptr >= bounding_boxes[i].xmin &&
-			    *ptr <= bounding_boxes[i].xmax){
-				xValid = true;
-			}
-			ptr++;
-		}*/
-		// Check if there are any valid y values
-		auto ptr = yPts.begin();
-		while(ptr != yPts.end()) { //Could substitute for loop here, but no real point
-			if (*ptr >= g_boxes[i].ymin &&
-				*ptr <= g_boxes[i].ymax &&
-				pixel.x >= g_boxes[i].xmin &&
-				pixel.x <= g_boxes[i].xmax) {
-				ROS_INFO("x: %d, y: %d; Item ID: %s", pixel.x, *ptr, g_boxes[i].Class.c_str());
-				return true;
-			}
-			ptr++;
-		}
-	}
-	
-	return false;
-}
- 
-static cv::Mat g_matrix;
-static bool mat_read = false;
-
 void depth_test_cb(const sensor_msgs::Image img) {
     g_matrix = cv_bridge::toCvCopy(img, sensor_msgs::image_encodings::TYPE_32FC1)->image;
     mat_read = true; 
 }
 
-
+// actually relevant
 int main(int argc, char **argv) { 
     ros::init(argc, argv, "hw5_node");
     ros::NodeHandle n;
     Storage s;
-    ros::Publisher wristPub = n.advertise<geometry_msgs::Point>("elbow", 1000);
-    ros::Publisher elbowPub = n.advertise<geometry_msgs::Point>("wristPub", 1000);
+
     //Human subscription
     ros::Subscriber openpose_sub = n.subscribe<openpose_ros_msgs::OpenPoseHumanList>(
 		                              "/openpose_ros/human_list", 10, &Storage::add, &s); 
@@ -118,10 +72,8 @@ int main(int argc, char **argv) {
     
     //Image (points) subscription
     ros::Subscriber depth_image_test = n.subscribe("/camera/depth/image", 10, &depth_test_cb);
-
-	ros::Subscriber boxes_counter = n.subscribe("/darknet_ros/found_object", 10, &store_box_count);
-	ros::Subscriber boxes = n.subscribe("/darknet_ros/bounding_boxes", 10, &store_boxes);
-
+    ros::Subscriber boxes_counter = n.subscribe("/darknet_ros/found_object", 10, &store_box_count);
+    ros::Subscriber boxes = n.subscribe("/darknet_ros/bounding_boxes", 10, &store_boxes);
 
     //Read in the data of humans and points
     openpose_ros_msgs::OpenPoseHuman h;
@@ -131,16 +83,13 @@ int main(int argc, char **argv) {
     }
 	h = s.get();
 
-	ROS_INFO("Found yolo stuff, num boxes: %d", g_numBoxes);
 	for (int i = 0; i < g_numBoxes; i++)
-		ROS_INFO("Box %d: class %s, prob %f, x: [%ld,%ld] y: [%ld,%ld]", i, g_boxes[i].Class.c_str(), g_boxes[i].probability,
-		         g_boxes[i].xmin, g_boxes[i].xmax, g_boxes[i].ymin, g_boxes[i].ymax);
+		ROS_INFO("Box %d: class %s, prob %f, x: [%ld,%ld] y: [%ld,%ld]", i,
+				  g_boxes[i].Class.c_str(), g_boxes[i].probability,
+		          g_boxes[i].xmin, g_boxes[i].xmax, g_boxes[i].ymin, g_boxes[i].ymax);
 
-    //while!point picked
-    ROS_INFO("Right arm: 3, right wrist: 4, left arm: 6, left wrist: 7");
     uint32_t points[4] {3, 4, 6, 7};
     float armPoints[12]; //array with all the points
-    Eigen::MatrixXf pointMatrix;
     for(int i = 0; i < 4; i++) {
 		uint32_t j = points[i];
 		float curZ = g_matrix.at<float>((int) h.body_key_points_with_prob[j].y, (int) h.body_key_points_with_prob[j].x);
@@ -149,26 +98,9 @@ int main(int argc, char **argv) {
 		armPoints[3 * i] = curX;
 		float curY = (h.body_key_points_with_prob[j].y + .5 - s.cy) * s.fy * curZ;
 		armPoints[3 * i + 1] = curY;
-		//pointMatrix(i, 0) = curX;
-		//pointMatrix(i, 1) = curY;
-		//pointMatrix(i, 2) = curZ;
     }
-	// GET WRIST COORDINATES
-    ros::Rate loop_rate(10);
-    int count = 0;
-    
-	geometry_msgs::Point wristMsg;	
-	geometry_msgs::Point elbowMsg;
-	//uncomment when the logic to determine which arm we are sending is done to test
-	wristMsg.x = armPoints[3];
-	wristMsg.y = armPoints[4];
-	wristMsg.z = armPoints[5];
-	ROS_INFO("Wrist: x %f y %f z %f\n", wristMsg.x, wristMsg.y, wristMsg.z);
-	elbowMsg.x = armPoints[0];
-	elbowMsg.y = armPoints[1];
-	elbowMsg.z = armPoints[2];
-	// ml.pubPoints(elbowMsg, wristMsg);
 
+	// All bresenham line calculations
 	float slope = (h.body_key_points_with_prob[4].y - h.body_key_points_with_prob[3].y) /
 	              (h.body_key_points_with_prob[4].x - h.body_key_points_with_prob[3].x);
 	float posY = h.body_key_points_with_prob[4].y;
@@ -176,10 +108,11 @@ int main(int argc, char **argv) {
 	int startX = posX;
 	int startY = (int) posY;
 
-
+    Eigen::MatrixXf pointMatrix;
+	// If we are pointing left (from the camera's perspective)
     if (h.body_key_points_with_prob[4].x - h.body_key_points_with_prob[3].x < 0) {
 	    ROS_INFO("Pointing left, x: %d, y: %d", posX, (int)posY);
-	    //Pointing left
+	    //Pointing left, calculate endpoint of line (where it leaves the screen)
 	    for (; posX > 0; posX--) {
 			posY -= slope;
 			if (posY < 0 || posY > 480) break;
@@ -187,36 +120,77 @@ int main(int argc, char **argv) {
 	    if (posY < 0) posY = 0;
 	    else if (posY > 480) posY = 480;
 	    else posX = 0;
-	    ROS_INFO("After adjustment: x: %d, y: %d", posX, (int) posY);
+	    ROS_INFO("After adjustment: x: %d, y: %d", posX, (int) posY); //Found endpoint of bresenham
 
 		ROS_INFO("Running Bresenham Algorithm");
 		pixel2d sPixel { startX, startY };
 		pixel2d ePixel { posX, (int) posY };
 		bressLine(sPixel, ePixel);
 
-	    geometry_msgs::Point end;
-	    float posZ = g_matrix.at<float>((int)posY, posX);
-	    end.z = posZ;
-	    
-	    end.x = (posX + .5 - s.cx) * s.fx * posZ;
-	    end.y = (posY + .5 - s.cy) * s.fy * posZ;
-	    ROS_INFO("X: %f, Y: %f, Z: %f", end.x, end.y, end.z);
-	    //ml.pubPoints(end, wristMsg);
-
-	    mapDepthToMatrix(pointMatrix, s);
+	    mapDepthToMatrix(pointMatrix, s); // Fill out point matrix
+		// At this point, the pointMatrix has the following format:
+		// [x0, y0, z0]
+		//  ...
+		// [x307199 y307199 z307199]
+		// Each row represents the calculated spatial coordinates of each pixel
+		// The pixels (per row) are represented in turn as row-major order
 	}
-	
-	
-	/*
-	pt2 p1;
-	pt2 p2;
-	std::vector<pt2> v;
-	bressLine(c, &p1, &p2);
-	*/	
 
- 	return 0;
+	// We want a 4 row, 480 * 640 column matrix that holds the 3D points from the depth camera
+	// We multiply the 3 x 4 projective matrix by this matrix to get the camera points
+	// Then, camera point (x, y) is the output matrix 640 * y + x / w
+	// The resulting w represents the depth, and we always want the smaller w because it is
+	// closer to the camera
+
+    // Formulating pMat 
+    Eigen::MatrixXf rMat(3, 4); // Rigid Transformation Matrix (ignoring fourth row); 3 x 4
+								// Notably, this is also the Pideal matrix
+    rMat << 1, 0, 0, -0.025,
+            0, 1, 0, 0.0,
+            0, 0, 1, 0.0;
+
+    Eigen::MatrixXf kMat(3, 3); // Constant matrix for adjusting values; 3 x 3
+								// Should describe the color camera; TODO: verify
+    kMat << 525.0, 0.0,   319.5,
+          	0.0,   525.0, 239.0,
+            0.0,   0.0,   1.0;
+
+	// Projective matrix: Formed from psuedoidentity rotation, plus translation, multiplied by constants
+	// This is the real projective matrix, not the ideal projective matrix, and is 3 x 4
+	// I *believe* that this matrix projects points from the RGB camera into the depth frame
+    Eigen::MatrixXf pMat = kMat * rMat;
+
+	// We cannot invert the pMat this way; instead, we would have to invert the rigid transformation matrix
+	// and calculate a new one.
+    // pMat.inverse();
+
+	// Create a huge 2D array that represents the mapping for the depth of each pixel in the color camera
+	// Notably, not every single function will be defined for this operation
+    Eigen::MatrixXd map(480,640);
+
+	/*
+    for (int i = 0; i < 480 * 640; i++) {
+		Eigen::MatrixXf row = pointMatrix.block(i, 0, 1, 3);
+		row.transpose();
+		Eigen::MatrixXf ret = row * pMat;
+    }*/
+	for (int r = 0; r < 480; r++) {
+		Eigen::MatrixXf row = pointMatrix.block(row, 0, 1, 3); // Get one row from the point matrix
+		Eigen::MatrixXf tRow(4, 1); // Create transpose row with psuedo-homography coordinate, 4 x 1
+		tRow(0, 0) = row(0, 0);  //				[x]
+		tRow(1, 0) = row(0, 1);  //				[y]
+		tRow(2, 0) = row(0, 2);  //				[z]
+		tRow(3, 0) = 1.0;        // Fake value  [1]
+		Eigen::MatrixXf ret = pMat * row; // Returned point, 4 x 1
+	}
+    return 0;
 }
 
+/* 
+ * Calculate the x,y,z coordinates of a pixel from the depth camera perspective
+ * Uses the g_matrix of depth coordinates and image registration math to determine
+ * where the point is, stores result in float references
+ */
 void calculateCoords(Storage &s, int index, float &x, float &y, float &z) {
     int row = index / 640;
     int col = index % 640;
@@ -225,17 +199,23 @@ void calculateCoords(Storage &s, int index, float &x, float &y, float &z) {
     y = (row + 0.5 - s.cy) * s.fy * z;
 }
 
+/*
+ * Store all of the depth points into a big Eigen matrix
+ * Resulting matrix shall have 480 * 640 rows, each with 3 columns
+ * The format of the columns is [x, y, z]
+ * Requires a Storage object that has the camera constants
+ */
 void mapDepthToMatrix(Eigen::MatrixXf &pMatrix, Storage &s) {
     for (int index = 0; index < 480 * 640; index++) {
-	float x, y, z;
-	calculateCoords(s, index, x, y, z);
-	pMatrix(index, 1) = x;
-	pMatrix(index, 2) = y;
-	pMatrix(index, 3) = z;
+		float x, y, z;
+		calculateCoords(s, index, x, y, z);
+		pMatrix(index, 1) = x;
+		pMatrix(index, 2) = y;
+		pMatrix(index, 3) = z;
     }
 }
 
-// Super dump implementation of a bresenham line; checks along the line given
+// Super dumb implementation of a bresenham line; checks along the line given
 // Will look up and down a certain number of pixels away from the given points
 // Note: This algorithm is similar, but not identical to the one on wikipedia
 void bressLine(pixel2d start, pixel2d end) {
@@ -250,4 +230,33 @@ void bressLine(pixel2d start, pixel2d end) {
 		if (p.x < 0 || p.x > 640 || p.y < 0 || p.y > 480) continue;
 		insideBoundingBox(p, verticalRange);
     }
+}
+
+// Check if the pixel is inside bounding box
+bool insideBoundingBox(pixel2d pixel, int delta) {
+	std::set<int> yPts;
+	// Gather all x and y coordinates around the point
+	yPts.insert(pixel.y);
+	for (int i=0; i<delta; i++) {
+		yPts.insert(pixel.y + i);
+		yPts.insert(pixel.y - i);
+	}
+	// Iterate through the bounding boxes
+	bool xValid = false;
+	for (int i = 0; i < g_numBoxes; i++) {
+	    // Check if there are any valid y values
+	    auto ptr = yPts.begin();
+        while(ptr != yPts.end()) { //Could substitute for loop here, but no real point
+            if (*ptr >= g_boxes[i].ymin &&
+                *ptr <= g_boxes[i].ymax &&
+                pixel.x >= g_boxes[i].xmin &&
+                pixel.x <= g_boxes[i].xmax) {
+                ROS_INFO("x: %d, y: %d; Item ID: %s", pixel.x, *ptr, g_boxes[i].Class.c_str());
+                return true;
+            }
+    	ptr++;
+        }
+    }
+	
+    return false;
 }

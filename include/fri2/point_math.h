@@ -1,6 +1,7 @@
 #ifndef _POINT_MATH_H_
 #define _POINT_MATH_H_
 
+#include <ros/ros.h>
 #include <cmath>
 #include <Eigen/Eigen>
 extern float dotProduct(const float *v1, const float *v2, int N);

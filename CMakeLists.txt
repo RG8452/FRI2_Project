@@ -71,6 +71,7 @@ add_executable(pointing_main
   src/Storage.cpp
   src/MakeLine.cpp
   src/Mapping.cpp
+  src/point_math.cpp
 #  others
 )
 

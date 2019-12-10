@@ -41,34 +41,34 @@ void crossProduct(const float v1[3], const float v2[3], float output[3]) {
  */
 float det(const float *matrix, int n) {
     if (n < 1) {
-	ROS_INFO("Cannot take determinant of invalid matrix size %d\n", n);
-	return -1.0;
+        ROS_INFO("Cannot take determinant of invalid matrix size %d\n", n);
+        return -1.0;
     }
     //Early Returns
     if (n == 1) return matrix[0];
     if (n == 2)
-	return matrix[0] * matrix[3] - matrix[1] * matrix[2];
-    float det = 0.0;
+	    return matrix[0] * matrix[3] - matrix[1] * matrix[2];
+    float determinant = 0.0;
     float sub[(n - 1) * (n - 1)]; //Make submatrix for recursion
     for (int x = 0; x < n; x++) { //Iterate top row
-	//subi, subj, i, and j are all positional ints
-    	int subi = 0;
-	for (int i = 1; i < n; i++) {
-	    int subj = 0;
-	    for (int j = 0; j < n; j++) {
-		if (j != x) {
-		    //For any valid row/column in the det, store in the sub matrix
-		    sub[subi * (n - 1) + subj] = matrix[i * n + j];
-		    subj++;
-		}
-	    }
-	    subi++;
-	}
-	// Recurse, performing cofactor expansion
-	if (x % 2 == 0) det += matrix[x] * det(sub, n - 1);
-	else det -= matrix[x] * det(sub, n - 1);
+        //subi, subj, i, and j are all positional ints
+        int subi = 0;
+        for (int i = 1; i < n; i++) {
+            int subj = 0;
+            for (int j = 0; j < n; j++) {
+                if (j != x) {
+                    //For any valid row/column in the det, store in the sub matrix
+                    sub[subi * (n - 1) + subj] = matrix[i * n + j];
+                    subj++;
+                }
+            }
+            subi++;
+        }
+        // Recurse, performing cofactor expansion
+        if (x % 2 == 0) determinant += matrix[x] * det(sub, n - 1);
+        else determinant -= matrix[x] * det(sub, n - 1);
     }
-    return det;
+    return determinant;
 }
 
 /*
@@ -96,12 +96,12 @@ float pointLineDistance3d(const float v1[3], const float v2[3], const float pt[3
     float cross[3];  // Numerator vector: d1 x d2
     // Set up vectors
     for (int i = 0; i < 3; i++) {
-	den[i] = v2[i] - v1[i];
-	d1[i] = pt[i] - v1[i];
-	d2[i] = pt[i] - v2[i];
+        den[i] = v2[i] - v1[i];
+        d1[i] = pt[i] - v1[i];
+        d2[i] = pt[i] - v2[i];
     }
     crossProduct(d1, d2, cross);
 
     // Return calculation
-    return magnitude(cross) / magnitude(den);
+    return magnitude(cross, 3) / magnitude(den, 3);
 }
